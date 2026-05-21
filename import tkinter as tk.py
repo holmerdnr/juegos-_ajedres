@@ -1,5 +1,5 @@
 import tkinter as tk
-import chess
+import chess 
 
 # --- CONFIGURACIÓN EDITABLE ---
 COLOR_1, COLOR_2 = "#f0d9b5", "#b58863"  # Colores del tablero
