@@ -2,9 +2,10 @@ import tkinter as tk
 import chess 
 
 # --- CONFIGURACIÓN EDITABLE ---
-COLOR_1, COLOR_2 = "ffffff", "#b58863"  # Colores del tablero
-COLOR_S = "00000"                      # Color de casilla seleccionada
-TAMANO = 60                              # Tamaño de cada casilla en píxeles
+COLOR_1 = "#ffffff"  # Corregido: Se agregó '#'
+COLOR_2 = "#b58863"  # Color madera/marrón original
+COLOR_S = "#769656"  # Corregido: Verde estilo Chess.com para que se vean las piezas negras
+TAMANO = 60          # Tamaño de cada casilla en píxeles
 
 # Mapeo de piezas a símbolos Unicode reales de ajedrez
 PIEZAS = {
