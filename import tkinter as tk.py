@@ -2,23 +2,24 @@ import tkinter as tk
 import chess 
 
 # --- 1. CONFIGURACIÓN ESTÉTICA ---
-COLOR_1 = "#f0d9b5"            # Crema clásico de torneos
-COLOR_2 = "#b58863"            # Marrón madera clásico
-COLOR_S = "#81b64c"            # Verde oliva moderno para los destinos
-BG_PANELES = "#262522"         # Gris oscuro elegante (Estilo Chess.com)
-TEXTO_PANEL = "#ffffff"        # Texto blanco para contraste
-TAMANO = 65                    # Tamaño de las casillas
-TIEMPO_INICIAL = 300           # Tiempo en segundos (5 minutos por jugador)
+COLOR_1 = "#f0d9b5"            
+COLOR_2 = "#b58863"            
+COLOR_S = "#81b64c"            
+BG_PANELES = "#262522"         
+TEXTO_PANEL = "#ffffff"        
+TAMANO = 65                    
+TIEMPO_INICIAL = 300           
 
-# Símbolos Unicode estilizados para las piezas
 PIEZAS = {
     'P': '♙', 'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔',
     'p': '♟', 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚'
 }
 
-# Listas para verificar piezas capturadas
 PIEZAS_INICIALES_BLANCAS = ['P']*8 + ['R']*2 + ['N']*2 + ['B']*2 + ['Q'] + ['K']
 PIEZAS_INICIALES_NEGRAS = ['p']*8 + ['r']*2 + ['n']*2 + ['b']*2 + ['q'] + ['k']
+
+# Paleta de colores para el efecto "fade" (de blanco/gris a casi negro)
+PASOS_FADE = ["#ffffff", "#aaaaaa", "#777777", "#444444", "#2c2b28", "#262522"]
 
 def formatear_tiempo(segundos):
     minutos = segundos // 60
@@ -26,16 +27,13 @@ def formatear_tiempo(segundos):
     return f"{minutos:02d}:{secs:02d}"
 
 def determinar_ganador_y_finalizar(motivo):
-    """Muestra un cartel llamativo con el WINNER y detiene el juego"""
     global juego_activo
     juego_activo = False
-    
     if motivo == "tiempo_blancas":
         label_info.config(text="🏆 WINNER: JUGADOR 2 (NEGRAS) 🏆 [Por Tiempo]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
     elif motivo == "tiempo_negras":
         label_info.config(text="🏆 WINNER: JUGADOR 1 (BLANCAS) 🏆 [Por Tiempo]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
     elif motivo == "mate":
-        # Si es el turno de las blancas y hay mate, significa que perdieron las blancas (gana el negro)
         if board.turn == chess.WHITE:
             label_info.config(text="🏆 WINNER: JUGADOR 2 (NEGRAS) 🏆 [Por Jaque Mate]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
         else:
@@ -48,7 +46,6 @@ def actualizar_reloj():
     if not juego_activo:
         return
 
-    # Verificar si a alguien se le acabó el tiempo
     if tiempo_blancas <= 0:
         determinar_ganador_y_finalizar("tiempo_blancas")
         return
@@ -86,8 +83,28 @@ def obtener_piezas_eliminadas():
     
     return blancas_eliminadas, negras_eliminadas
 
+# --- NUEVO: FUNCIÓN PARA EL EFECTO DE DESVANECIMIENTO ---
+def animar_desvanecimiento(label_objetivo, texto_base, pieza_nueva, paso=0):
+    """Hace que la última pieza capturada aparezca con un parpadeo/desvanecimiento suave"""
+    if paso < len(PASOS_FADE):
+        color_actual = PASOS_FADE[paso]
+        
+        # Dibujamos las piezas anteriores normales + la nueva pieza con el color del frame actual
+        root.after(60, lambda: label_objetivo.config(
+            text=texto_base, 
+            fg="#ffffff"
+        ))
+        # Creamos un efecto visual haciendo resaltar la última pieza capturada
+        label_objetivo.config(text=f"{texto_base} {pieza_nueva}", fg=color_actual)
+        
+        # Llamada recursiva para el siguiente tono de color
+        root.after(80, lambda: animar_desvanecimiento(label_objetivo, texto_base, pieza_nueva, paso + 1))
+    else:
+        # Al terminar la animación, dejamos todo el texto uniforme en blanco estable
+        label_objetivo.config(text=f"{texto_base} {pieza_nueva}", fg="#ffffff")
+
 def click(event):
-    global origen, juego_activo, movimientos_posibles
+    global origen, juego_activo, movimientos_posibles, ultimas_blancas_elim, ultimas_negras_elim
     if not juego_activo:
         return
 
@@ -106,10 +123,27 @@ def click(event):
         if move in board.legal_moves:
             board.push(move)
             
-            # --- NUEVO: Verificar si el juego terminó por reglas de ajedrez ---
+            # Revisar si hubo capturas para activar la animación
+            nuevas_blancas, nuevas_negras = obtener_piezas_eliminadas()
+            
+            if len(nuevas_negras) > len(ultimas_negras_elim):
+                # Gana J1: Se eliminó una pieza negra
+                pieza_capturada = PIEZAS[nuevas_negras[-1]]
+                texto_previo = " ".join([PIEZAS[p] for p in ultimas_negras_elim])
+                animar_desvanecimiento(label_eliminadas_izq, texto_previo, pieza_capturada)
+                
+            elif len(nuevas_blancas) > len(ultimas_blancas_elim):
+                # Gana J2: Se eliminó una pieza blanca
+                pieza_capturada = PIEZAS[nuevas_blancas[-1]]
+                texto_previo = " ".join([PIEZAS[p] for p in ultimas_blancas_elim])
+                animar_desvanecimiento(label_eliminadas_der, texto_previo, pieza_capturada)
+
+            # Actualizar historial de capturas
+            ultimas_blancas_elim, ultimas_negras_elim = nuevas_blancas, nuevas_negras
+
             if board.is_checkmate():
                 determinar_ganador_y_finalizar("mate")
-            elif board.is_game_over():  # Tablas, ahogado, etc.
+            elif board.is_game_over():
                 determinar_ganador_y_finalizar("tablas")
             else:
                 turno = "Blancas (Jugador 1)" if board.turn == chess.WHITE else "Negras (Jugador 2)"
@@ -122,16 +156,11 @@ def click(event):
 
 def actualizar_tablero():
     canvas.delete("all")
-    
     for f in range(8):
         for c in range(8):
             sq = chess.square(c, 7 - f)
             color_fondo = COLOR_1 if (f + c) % 2 == 0 else COLOR_2
-            
-            canvas.create_rectangle(
-                c*TAMANO, f*TAMANO, (c+1)*TAMANO, (f+1)*TAMANO, 
-                fill=color_fondo, outline=""
-            )
+            canvas.create_rectangle(c*TAMANO, f*TAMANO, (c+1)*TAMANO, (f+1)*TAMANO, fill=color_fondo, outline="")
             
             if sq in movimientos_posibles:
                 centro_x = c * TAMANO + TAMANO // 2
@@ -143,14 +172,7 @@ def actualizar_tablero():
 
             pieza = board.piece_at(sq)
             if pieza:
-                canvas.create_text(
-                    c*TAMANO + TAMANO//2, f*TAMANO + TAMANO//2, 
-                    text=PIEZAS[pieza.symbol()], font=("Helvetica", int(TAMANO * 0.6))
-                )
-
-    blancas_elim, negras_elim = obtener_piezas_eliminadas()
-    label_eliminadas_izq.config(text=" ".join([PIEZAS[p] for p in negras_elim]))
-    label_eliminadas_der.config(text=" ".join([PIEZAS[p] for p in blancas_elim]))
+                canvas.create_text(c*TAMANO + TAMANO//2, f*TAMANO + TAMANO//2, text=PIEZAS[pieza.symbol()], font=("Helvetica", int(TAMANO * 0.6)))
 
 # --- 2. ASIGNACIÓN DE VARIABLES GLOBALES ---
 board = chess.Board()
@@ -160,9 +182,13 @@ tiempo_blancas = TIEMPO_INICIAL
 tiempo_negras = TIEMPO_INICIAL
 juego_activo = True
 
+# Controladores de estado para capturas
+ultimas_blancas_elim = []
+ultimas_negras_elim = []
+
 # --- 3. CONSTRUCCIÓN DE LA INTERFAZ GRÁFICA ---
 root = tk.Tk()
-root.title("Ajedrez Profesional con Detección de Ganador")
+root.title("Ajedrez Profesional con Efectos Animados")
 root.configure(bg=BG_PANELES)
 
 frame_superior = tk.Frame(root, bg=BG_PANELES, pady=15) 
