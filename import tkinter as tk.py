@@ -18,7 +18,6 @@ PIEZAS = {
 PIEZAS_INICIALES_BLANCAS = ['P']*8 + ['R']*2 + ['N']*2 + ['B']*2 + ['Q'] + ['K']
 PIEZAS_INICIALES_NEGRAS = ['p']*8 + ['r']*2 + ['n']*2 + ['b']*2 + ['q'] + ['k']
 
-# Paleta de colores para el efecto "fade" (de blanco/gris a casi negro)
 PASOS_FADE = ["#ffffff", "#aaaaaa", "#777777", "#444444", "#2c2b28", "#262522"]
 
 def formatear_tiempo(segundos):
@@ -83,25 +82,36 @@ def obtener_piezas_eliminadas():
     
     return blancas_eliminadas, negras_eliminadas
 
-# --- NUEVO: FUNCIÓN PARA EL EFECTO DE DESVANECIMIENTO ---
 def animar_desvanecimiento(label_objetivo, texto_base, pieza_nueva, paso=0):
-    """Hace que la última pieza capturada aparezca con un parpadeo/desvanecimiento suave"""
     if paso < len(PASOS_FADE):
         color_actual = PASOS_FADE[paso]
-        
-        # Dibujamos las piezas anteriores normales + la nueva pieza con el color del frame actual
-        root.after(60, lambda: label_objetivo.config(
-            text=texto_base, 
-            fg="#ffffff"
-        ))
-        # Creamos un efecto visual haciendo resaltar la última pieza capturada
+        root.after(60, lambda: label_objetivo.config(text=texto_base, fg="#ffffff"))
         label_objetivo.config(text=f"{texto_base} {pieza_nueva}", fg=color_actual)
-        
-        # Llamada recursiva para el siguiente tono de color
         root.after(80, lambda: animar_desvanecimiento(label_objetivo, texto_base, pieza_nueva, paso + 1))
     else:
-        # Al terminar la animación, dejamos todo el texto uniforme en blanco estable
         label_objetivo.config(text=f"{texto_base} {pieza_nueva}", fg="#ffffff")
+
+# --- NUEVO: FUNCIÓN PARA EL EFECTO DE CORTE VISUAL ---
+def animar_corte(c, f, paso=0):
+    """Dibuja una línea diagonal que simula un tajo cortando la casilla"""
+    # Coordenadas de la casilla
+    x_ini = c * TAMANO
+    y_ini = f * TAMANO
+    x_fin = (c + 1) * TAMANO
+    y_fin = (f + 1) * TAMANO
+    
+    if paso == 0:
+        # Tajo inicial: línea roja/blanca brillante y delgada
+        canvas.create_line(x_ini + 5, y_ini + 5, x_fin - 5, y_fin - 5, fill="#ff3333", width=3, tags="efecto_corte")
+        root.after(70, lambda: animar_corte(c, f, 1))
+    elif paso == 1:
+        # El corte se expande y se vuelve blanco antes de disiparse
+        canvas.delete("efecto_corte")
+        canvas.create_line(x_ini + 2, y_ini + 2, x_fin - 2, y_fin - 2, fill="#ffffff", width=4, tags="efecto_corte")
+        root.after(70, lambda: animar_corte(c, f, 2))
+    elif paso == 2:
+        # Se borra el corte por completo
+        canvas.delete("efecto_corte")
 
 def click(event):
     global origen, juego_activo, movimientos_posibles, ultimas_blancas_elim, ultimas_negras_elim
@@ -121,24 +131,27 @@ def click(event):
             move = chess.Move(origen, casilla, chess.QUEEN)
             
         if move in board.legal_moves:
+            # Detectar si la casilla de destino tenía una pieza antes de realizar el movimiento
+            habia_captura = board.piece_at(casilla) is not None
+            
             board.push(move)
             
-            # Revisar si hubo capturas para activar la animación
+            # Si hubo captura, ejecutamos el efecto de corte en la pantalla (usando la fila invertida de Tkinter)
+            if habia_captura:
+                animar_corte(c, 7 - f)
+            
             nuevas_blancas, nuevas_negras = obtener_piezas_eliminadas()
             
             if len(nuevas_negras) > len(ultimas_negras_elim):
-                # Gana J1: Se eliminó una pieza negra
                 pieza_capturada = PIEZAS[nuevas_negras[-1]]
                 texto_previo = " ".join([PIEZAS[p] for p in ultimas_negras_elim])
                 animar_desvanecimiento(label_eliminadas_izq, texto_previo, pieza_capturada)
                 
             elif len(nuevas_blancas) > len(ultimas_blancas_elim):
-                # Gana J2: Se eliminó una pieza blanca
                 pieza_capturada = PIEZAS[nuevas_blancas[-1]]
                 texto_previo = " ".join([PIEZAS[p] for p in ultimas_blancas_elim])
                 animar_desvanecimiento(label_eliminadas_der, texto_previo, pieza_capturada)
 
-            # Actualizar historial de capturas
             ultimas_blancas_elim, ultimas_negras_elim = nuevas_blancas, nuevas_negras
 
             if board.is_checkmate():
@@ -182,13 +195,12 @@ tiempo_blancas = TIEMPO_INICIAL
 tiempo_negras = TIEMPO_INICIAL
 juego_activo = True
 
-# Controladores de estado para capturas
 ultimas_blancas_elim = []
 ultimas_negras_elim = []
 
 # --- 3. CONSTRUCCIÓN DE LA INTERFAZ GRÁFICA ---
 root = tk.Tk()
-root.title("Ajedrez Profesional con Efectos Animados")
+root.title("Ajedrez Profesional Animado")
 root.configure(bg=BG_PANELES)
 
 frame_superior = tk.Frame(root, bg=BG_PANELES, pady=15) 
@@ -222,8 +234,10 @@ label_eliminadas_der.pack(pady=5, anchor="w")
 label_info = tk.Label(root, text="Turno actual: Blancas (Jugador 1)", font=("Helvetica", 11), bg="#1e1c1a", fg="#ffffff", pady=8)
 label_info.pack(fill="x", pady=15)
 
-# --- 4. EJECUCIÓN DE PROCESOS ---
 actualizar_tablero()
+actualizar_reloj()
+
+root.mainloop()
 actualizar_reloj()
 
 root.mainloop()
