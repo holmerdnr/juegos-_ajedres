@@ -25,18 +25,35 @@ def formatear_tiempo(segundos):
     secs = segundos % 60
     return f"{minutos:02d}:{secs:02d}"
 
+def determinar_ganador_y_finalizar(motivo):
+    """Muestra un cartel llamativo con el WINNER y detiene el juego"""
+    global juego_activo
+    juego_activo = False
+    
+    if motivo == "tiempo_blancas":
+        label_info.config(text="🏆 WINNER: JUGADOR 2 (NEGRAS) 🏆 [Por Tiempo]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
+    elif motivo == "tiempo_negras":
+        label_info.config(text="🏆 WINNER: JUGADOR 1 (BLANCAS) 🏆 [Por Tiempo]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
+    elif motivo == "mate":
+        # Si es el turno de las blancas y hay mate, significa que perdieron las blancas (gana el negro)
+        if board.turn == chess.WHITE:
+            label_info.config(text="🏆 WINNER: JUGADOR 2 (NEGRAS) 🏆 [Por Jaque Mate]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
+        else:
+            label_info.config(text="🏆 WINNER: JUGADOR 1 (BLANCAS) 🏆 [Por Jaque Mate]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
+    elif motivo == "tablas":
+        label_info.config(text="🤝 PARTIDA EN TABLAS (EMPATE) 🤝", bg="#444444", fg="#ffffff", font=("Helvetica", 12, "bold"))
+
 def actualizar_reloj():
     global tiempo_blancas, tiempo_negras, juego_activo
     if not juego_activo:
         return
 
+    # Verificar si a alguien se le acabó el tiempo
     if tiempo_blancas <= 0:
-        label_info.config(text="¡TIEMPO AGOTADO! Ganan las Negras", fg="#ff4444")
-        juego_activo = False
+        determinar_ganador_y_finalizar("tiempo_blancas")
         return
     elif tiempo_negras <= 0:
-        label_info.config(text="¡TIEMPO AGOTADO! Ganan las Blancas", fg="#ff4444")
-        juego_activo = False
+        determinar_ganador_y_finalizar("tiempo_negras")
         return
 
     if board.turn == chess.WHITE:
@@ -88,9 +105,12 @@ def click(event):
             
         if move in board.legal_moves:
             board.push(move)
-            if board.is_game_over():
-                juego_activo = False
-                label_info.config(text=f"PARTIDA FINALIZADA: {board.result()}", fg="#2196F3")
+            
+            # --- NUEVO: Verificar si el juego terminó por reglas de ajedrez ---
+            if board.is_checkmate():
+                determinar_ganador_y_finalizar("mate")
+            elif board.is_game_over():  # Tablas, ahogado, etc.
+                determinar_ganador_y_finalizar("tablas")
             else:
                 turno = "Blancas (Jugador 1)" if board.turn == chess.WHITE else "Negras (Jugador 2)"
                 label_info.config(text=f"Turno actual: {turno}", fg="#ffffff")
@@ -142,7 +162,7 @@ juego_activo = True
 
 # --- 3. CONSTRUCCIÓN DE LA INTERFAZ GRÁFICA ---
 root = tk.Tk()
-root.title("Ajedrez Profesional")
+root.title("Ajedrez Profesional con Detección de Ganador")
 root.configure(bg=BG_PANELES)
 
 frame_superior = tk.Frame(root, bg=BG_PANELES, pady=15) 
@@ -173,7 +193,6 @@ tk.Label(frame_der, text="CAPTURAS J2", font=("Helvetica", 9, "bold"), bg=BG_PAN
 label_eliminadas_der = tk.Label(frame_der, text="", font=("Helvetica", 16), bg=BG_PANELES, fg="#ffffff", wraplength=100, justify="left")
 label_eliminadas_der.pack(pady=5, anchor="w")
 
-# CORREGIDO AQUÍ: Parámetros 100% seguros y limpios para evitar el SyntaxError
 label_info = tk.Label(root, text="Turno actual: Blancas (Jugador 1)", font=("Helvetica", 11), bg="#1e1c1a", fg="#ffffff", pady=8)
 label_info.pack(fill="x", pady=15)
 
