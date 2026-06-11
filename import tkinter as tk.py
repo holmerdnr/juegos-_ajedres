@@ -1,13 +1,15 @@
 import tkinter as tk
 import chess 
+import random
+import math
 
 # --- 1. CONFIGURACIÓN ESTÉTICA (ESTILO CYBER-NEON) ---
-COLOR_1 = "#1a1a1a"            # Casillas oscuras (Gris Grafito)
-COLOR_2 = "#00f0ff"            # Casillas claras (Azul Eléctrico Neón)
-COLOR_S = "#39ff14"            # Indicador de movimientos (Verde Neón Radiante)
+COLOR_1 = "#0b0885"            # Casillas oscuras (Gris Grafito)
+COLOR_2 = "#FFFFFF"            # Casillas claras (Azul Eléctrico Neón)
+COLOR_S = "#31a83b"            # Indicador de movimientos (Verde Neón Radiante)
 BG_PANELES = "#0d0d0d"         # Fondo general de la app (Negro Absoluto)
-TEXTO_PANEL = "#ff007f"        # Color de acento secundario (Rosa Neón)
-TAMANO = 75                   
+TEXTO_PANEL = "#003cff"        # Color de acento secundario (Rosa Neón)
+TAMANO = 65                    
 TIEMPO_INICIAL = 300           
 
 PIEZAS = {
@@ -18,7 +20,7 @@ PIEZAS = {
 PIEZAS_INICIALES_BLANCAS = ['P']*8 + ['R']*2 + ['N']*2 + ['B']*2 + ['Q'] + ['K']
 PIEZAS_INICIALES_NEGRAS = ['p']*8 + ['r']*2 + ['n']*2 + ['b']*2 + ['q'] + ['k']
 
-PASOS_FADE = ["#ffffff", "#ff007f", "#aa0055", "#55002b", "#1a000d", "#0d0d0d"]
+PASOS_FADE = ["#ffffff", "#658eca", "#aa0055", "#55002b", "#1a000d", "#0d0d0d"]
 
 def formatear_tiempo(segundos):
     minutos = segundos // 60
@@ -107,6 +109,45 @@ def animar_corte(c, f, paso=0):
     elif paso == 2:
         canvas.delete("efecto_corte")
 
+# --- NUEVO: EFECTO DE EXPLOSIÓN DE PARTICULAS CYBER ---
+def animar_explosion(cx, cy, particulas=None, paso=0):
+    """ Genera una explosión expansiva de partículas neón en el Canvas """
+    MAX_PASOS = 12
+    if paso == 0:
+        # Inicializar partículas con ángulos y velocidades aleatorias
+        particulas = []
+        colores = ["#ff007f", "#00f0ff", "#39ff14", "#ffffff"] # Colores neón
+        for _ in range(25): # Cantidad de partículas
+            angulo = random.uniform(0, 2 * math.pi)
+            velocidad = random.uniform(2, 7)
+            color = random.choice(colores)
+            tamano = random.randint(2, 5)
+            particulas.append({'ang': angulo, 'vel': velocidad, 'col': color, 'tam': tamano})
+    
+    # Limpiar partículas del paso anterior
+    canvas.delete("explosion")
+    
+    if paso < MAX_PASOS:
+        for p in particulas:
+            # Calcular la nueva posición expandida
+            distancia = p['vel'] * paso
+            px = cx + de_escala_x_y(distancia, p['ang'])[0]
+            py = cy + de_escala_x_y(distancia, p['ang'])[1]
+            
+            # Dibujar cada partícula (pequeños rectángulos/óvalos cibernéticos)
+            t = p['tam']
+            canvas.create_rectangle(px - t, py - t, px + t, py + t, fill=p['col'], outline="", tags="explosion")
+        
+        # Siguiente frame de la animación
+        root.after(30, lambda: animar_explosion(cx, cy, particulas, paso + 1))
+    else:
+        canvas.delete("explosion")
+
+def de_escala_x_y(distancia, angulo):
+    """ Función auxiliar para calcular coordenadas polares """
+    return distancia * math.cos(angulo), distancia * math.sin(angulo)
+
+
 def click(event):
     global origen, juego_activo, movimientos_posibles, ultimas_blancas_elim, ultimas_negras_elim
     if not juego_activo:
@@ -131,6 +172,11 @@ def click(event):
             
             if habia_captura:
                 animar_corte(c, 7 - f)
+                # --- LLAMADA A LA EXPLOSIÓN ---
+                # Calculamos el centro de la casilla cliqueada
+                centro_x = c * TAMANO + TAMANO // 2
+                centro_y = (7 - f) * TAMANO + TAMANO // 2
+                animar_explosion(centro_x, centro_y)
             
             nuevas_blancas, nuevas_negras = obtener_piezas_eliminadas()
             
@@ -144,8 +190,6 @@ def click(event):
                 texto_previo = " ".join([PIEZAS[p] for p in ultimas_blancas_elim])
                 animar_desvanecimiento(label_eliminadas_der, texto_previo, pieza_capturada)
 
-            ultimas_blancas_elim, ultimas_negras_elim = nuevas_blancas, nuevas_negras
-
             if board.is_checkmate():
                 determinar_ganador_y_finalizar("mate")
             elif board.is_game_over():
@@ -154,8 +198,13 @@ def click(event):
                 turno = "Blancas (Core 01)" if board.turn == chess.WHITE else "Negras (Core 02)"
                 label_info.config(text=f"SISTEMA OPERATIVO // Turno de: {turno}", fg="#ffffff")
 
-        origen = None
-        movimientos_posibles = []
+            ultimas_blancas_elim, ultimas_negras_elim = nuevas_blancas, nuevas_negras
+            origen = None
+            movimientos_posibles = []
+        else:
+            # Si hace clic en otro lado o movimiento inválido, resetea la selección
+            origen = None
+            movimientos_posibles = []
         
     actualizar_tablero()
 
@@ -217,7 +266,7 @@ root.configure(bg=BG_PANELES)
 root.geometry(f"{TAMANO*8 + 260}x{TAMANO*8 + 160}")
 
 # ==========================================
-# PANTALLA DE INICIO (ESTILO FUTURISTA CON CURSOR ARREGLADO)
+# PANTALLA DE INICIO
 # ==========================================
 frame_menu = tk.Frame(root, bg=BG_PANELES)
 frame_menu.pack(fill="both", expand=True)
@@ -245,7 +294,7 @@ btn_iniciar = tk.Button(
     padx=25, 
     pady=10, 
     bd=0, 
-    cursor="cross",  # Se corrigió "terminal" por "cross" para evitar errores de Tcl
+    cursor="cross",  
     command=iniciar_partida
 )
 btn_iniciar.pack(pady=(30, 0))
@@ -282,11 +331,11 @@ canvas.bind("<Button-1>", click)
 
 frame_der = tk.Frame(frame_juego, width=120, bg=BG_PANELES, padx=10)
 frame_der.pack(side="right", fill="y")
-tk.Label(frame_der, text="DATA_LOST J2", font=("Courier", 9, "bold"), bg=BG_PANELES, fg="#555555").pack(anchor="w")
-label_eliminadas_der = tk.Label(frame_der, text="", font=("Helvetica", 16), bg=BG_PANELES, fg="#ffffff", wraplength=100, justify="left")
+tk.Label(frame_der, text="DATA_LOST J2", font=("Courier", 9, "bold"), bg=BG_PANELES, fg="#092D64").pack(anchor="w")
+label_eliminadas_der = tk.Label(frame_der, text="", font=("Helvetica", 16), bg=BG_PANELES, fg="#124670", wraplength=100, justify="left")
 label_eliminadas_der.pack(pady=5, anchor="w")
 
-label_info = tk.Label(frame_juego_principal, text="SISTEMA OPERATIVO // Turno de: Blancas (Core 01)", font=("Courier", 11), bg="#111111", fg=COLOR_2, pady=8)
+label_info = tk.Label(frame_juego_principal, text="SISTEMA OPERATIVO // Turno de: Blancas (Core 01)", font=("Courier", 11), bg="#197D85", fg=COLOR_2, pady=8)
 label_info.pack(fill="x", pady=15)
 
 root.mainloop()
