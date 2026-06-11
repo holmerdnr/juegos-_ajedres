@@ -1,13 +1,13 @@
 import tkinter as tk
 import chess 
 
-# --- 1. CONFIGURACIÓN ESTÉTICA ---
-COLOR_1 = "#f0d9b5"            
-COLOR_2 = "#b58863"            
-COLOR_S = "#81b64c"            
-BG_PANELES = "#262522"         
-TEXTO_PANEL = "#ffffff"        
-TAMANO = 65                    
+# --- 1. CONFIGURACIÓN ESTÉTICA (ESTILO CYBER-NEON) ---
+COLOR_1 = "#1a1a1a"            # Casillas oscuras (Gris Grafito)
+COLOR_2 = "#00f0ff"            # Casillas claras (Azul Eléctrico Neón)
+COLOR_S = "#39ff14"            # Indicador de movimientos (Verde Neón Radiante)
+BG_PANELES = "#0d0d0d"         # Fondo general de la app (Negro Absoluto)
+TEXTO_PANEL = "#ff007f"        # Color de acento secundario (Rosa Neón)
+TAMANO = 75                   
 TIEMPO_INICIAL = 300           
 
 PIEZAS = {
@@ -18,7 +18,7 @@ PIEZAS = {
 PIEZAS_INICIALES_BLANCAS = ['P']*8 + ['R']*2 + ['N']*2 + ['B']*2 + ['Q'] + ['K']
 PIEZAS_INICIALES_NEGRAS = ['p']*8 + ['r']*2 + ['n']*2 + ['b']*2 + ['q'] + ['k']
 
-PASOS_FADE = ["#ffffff", "#aaaaaa", "#777777", "#444444", "#2c2b28", "#262522"]
+PASOS_FADE = ["#ffffff", "#ff007f", "#aa0055", "#55002b", "#1a000d", "#0d0d0d"]
 
 def formatear_tiempo(segundos):
     minutos = segundos // 60
@@ -29,16 +29,16 @@ def determinar_ganador_y_finalizar(motivo):
     global juego_activo
     juego_activo = False
     if motivo == "tiempo_blancas":
-        label_info.config(text="🏆 WINNER: JUGADOR 2 (NEGRAS) 🏆 [Por Tiempo]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
+        label_info.config(text="🛸 WINNER: JUGADOR 2 (NEGRAS) 🛸 [Por Tiempo]", bg="#ff007f", fg="#ffffff", font=("Helvetica", 12, "bold"))
     elif motivo == "tiempo_negras":
-        label_info.config(text="🏆 WINNER: JUGADOR 1 (BLANCAS) 🏆 [Por Tiempo]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
+        label_info.config(text="🛸 WINNER: JUGADOR 1 (BLANCAS) 🛸 [Por Tiempo]", bg="#ff007f", fg="#ffffff", font=("Helvetica", 12, "bold"))
     elif motivo == "mate":
         if board.turn == chess.WHITE:
-            label_info.config(text="🏆 WINNER: JUGADOR 2 (NEGRAS) 🏆 [Por Jaque Mate]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
+            label_info.config(text="🛸 WINNER: JUGADOR 2 (NEGRAS) 🛸 [Jaque Mate]", bg="#ff007f", fg="#ffffff", font=("Helvetica", 12, "bold"))
         else:
-            label_info.config(text="🏆 WINNER: JUGADOR 1 (BLANCAS) 🏆 [Por Jaque Mate]", bg="#81b64c", fg="#ffffff", font=("Helvetica", 12, "bold"))
+            label_info.config(text="🛸 WINNER: JUGADOR 1 (BLANCAS) 🛸 [Jaque Mate]", bg="#ff007f", fg="#ffffff", font=("Helvetica", 12, "bold"))
     elif motivo == "tablas":
-        label_info.config(text="🤝 PARTIDA EN TABLAS (EMPATE) 🤝", bg="#444444", fg="#ffffff", font=("Helvetica", 12, "bold"))
+        label_info.config(text="🌐 SISTEMA EN TABLAS (EMPATE) 🌐", bg="#333333", fg="#ffffff", font=("Helvetica", 12, "bold"))
 
 def actualizar_reloj():
     global tiempo_blancas, tiempo_negras, juego_activo
@@ -54,15 +54,15 @@ def actualizar_reloj():
 
     if board.turn == chess.WHITE:
         tiempo_blancas -= 1
-        label_j1.config(bg="#ffffff", fg="#000000")
-        label_j2.config(bg="#312e2b", fg="#aaaaaa")
+        label_j1.config(bg="#00f0ff", fg="#000000")
+        label_j2.config(bg="#1a1a1a", fg="#666666")
     else:
         tiempo_negras -= 1
-        label_j2.config(bg="#ffffff", fg="#000000")
-        label_j1.config(bg="#312e2b", fg="#aaaaaa")
+        label_j2.config(bg="#00f0ff", fg="#000000")
+        label_j1.config(bg="#1a1a1a", fg="#666666")
 
-    label_j1.config(text=f" JUGADOR 1  |  {formatear_tiempo(tiempo_blancas)} ")
-    label_j2.config(text=f" JUGADOR 2  |  {formatear_tiempo(tiempo_negras)} ")
+    label_j1.config(text=f" CORE 01 (B) ⚡ {formatear_tiempo(tiempo_blancas)} ")
+    label_j2.config(text=f" CORE 02 (N) ⚡ {formatear_tiempo(tiempo_negras)} ")
     root.after(1000, actualizar_reloj)
 
 def obtener_piezas_eliminadas():
@@ -91,26 +91,20 @@ def animar_desvanecimiento(label_objetivo, texto_base, pieza_nueva, paso=0):
     else:
         label_objetivo.config(text=f"{texto_base} {pieza_nueva}", fg="#ffffff")
 
-# --- NUEVO: FUNCIÓN PARA EL EFECTO DE CORTE VISUAL ---
 def animar_corte(c, f, paso=0):
-    """Dibuja una línea diagonal que simula un tajo cortando la casilla"""
-    # Coordenadas de la casilla
     x_ini = c * TAMANO
     y_ini = f * TAMANO
     x_fin = (c + 1) * TAMANO
     y_fin = (f + 1) * TAMANO
     
     if paso == 0:
-        # Tajo inicial: línea roja/blanca brillante y delgada
-        canvas.create_line(x_ini + 5, y_ini + 5, x_fin - 5, y_fin - 5, fill="#ff3333", width=3, tags="efecto_corte")
-        root.after(70, lambda: animar_corte(c, f, 1))
+        canvas.create_line(x_ini + 5, y_ini + 5, x_fin - 5, y_fin - 5, fill=TEXTO_PANEL, width=4, tags="efecto_corte")
+        root.after(60, lambda: animar_corte(c, f, 1))
     elif paso == 1:
-        # El corte se expande y se vuelve blanco antes de disiparse
         canvas.delete("efecto_corte")
-        canvas.create_line(x_ini + 2, y_ini + 2, x_fin - 2, y_fin - 2, fill="#ffffff", width=4, tags="efecto_corte")
-        root.after(70, lambda: animar_corte(c, f, 2))
+        canvas.create_line(x_ini + 2, y_ini + 2, x_fin - 2, y_fin - 2, fill="#ffffff", width=5, tags="efecto_corte")
+        root.after(60, lambda: animar_corte(c, f, 2))
     elif paso == 2:
-        # Se borra el corte por completo
         canvas.delete("efecto_corte")
 
 def click(event):
@@ -131,12 +125,10 @@ def click(event):
             move = chess.Move(origen, casilla, chess.QUEEN)
             
         if move in board.legal_moves:
-            # Detectar si la casilla de destino tenía una pieza antes de realizar el movimiento
             habia_captura = board.piece_at(casilla) is not None
             
             board.push(move)
             
-            # Si hubo captura, ejecutamos el efecto de corte en la pantalla (usando la fila invertida de Tkinter)
             if habia_captura:
                 animar_corte(c, 7 - f)
             
@@ -159,8 +151,8 @@ def click(event):
             elif board.is_game_over():
                 determinar_ganador_y_finalizar("tablas")
             else:
-                turno = "Blancas (Jugador 1)" if board.turn == chess.WHITE else "Negras (Jugador 2)"
-                label_info.config(text=f"Turno actual: {turno}", fg="#ffffff")
+                turno = "Blancas (Core 01)" if board.turn == chess.WHITE else "Negras (Core 02)"
+                label_info.config(text=f"SISTEMA OPERATIVO // Turno de: {turno}", fg="#ffffff")
 
         origen = None
         movimientos_posibles = []
@@ -178,14 +170,34 @@ def actualizar_tablero():
             if sq in movimientos_posibles:
                 centro_x = c * TAMANO + TAMANO // 2
                 centro_y = f * TAMANO + TAMANO // 2
-                x1, y1 = centro_x, centro_y - 8
-                x2, y2 = centro_x - 8, centro_y + 6
-                x3, y3 = centro_x + 8, centro_y + 6
-                canvas.create_polygon(x1, y1, x2, y2, x3, y3, fill=COLOR_S, outline="")
+                canvas.create_oval(centro_x-14, centro_y-14, centro_x+14, centro_y+14, outline=COLOR_S, width=3)
 
             pieza = board.piece_at(sq)
             if pieza:
-                canvas.create_text(c*TAMANO + TAMANO//2, f*TAMANO + TAMANO//2, text=PIEZAS[pieza.symbol()], font=("Helvetica", int(TAMANO * 0.6)))
+                x = c * TAMANO + TAMANO // 2
+                y = f * TAMANO + TAMANO // 2
+                simbolo = PIEZAS[pieza.symbol()]
+                fuente = ("Helvetica", int(TAMANO * 0.65), "bold")
+                
+                if pieza.color == chess.WHITE:
+                    color_cuerpo = "#ffffff"
+                    color_borde = "#000000"
+                else:
+                    color_cuerpo = "#000000"
+                    color_borde = "#00f0ff"
+                
+                for dx, dy in [(-2,-2), (2,-2), (-2,2), (2,2), (0,-2), (0,2), (-2,0), (2,0)]:
+                    canvas.create_text(x + dx, y + dy, text=simbolo, font=fuente, fill=color_borde)
+                
+                canvas.create_text(x, y, text=simbolo, font=fuente, fill=color_cuerpo)
+
+def iniciar_partida():
+    frame_menu.pack_forget()
+    frame_juego_principal.pack(fill="both", expand=True)
+    global juego_activo
+    juego_activo = True
+    actualizar_tablero()
+    actualizar_reloj()
 
 # --- 2. ASIGNACIÓN DE VARIABLES GLOBALES ---
 board = chess.Board()
@@ -193,31 +205,74 @@ origen = None
 movimientos_posibles = []
 tiempo_blancas = TIEMPO_INICIAL  
 tiempo_negras = TIEMPO_INICIAL
-juego_activo = True
+juego_activo = False 
 
 ultimas_blancas_elim = []
 ultimas_negras_elim = []
 
 # --- 3. CONSTRUCCIÓN DE LA INTERFAZ GRÁFICA ---
 root = tk.Tk()
-root.title("Ajedrez Profesional Animado")
+root.title("CHESS_MATRIX // Sistema Cuántico de Ajedrez")
 root.configure(bg=BG_PANELES)
+root.geometry(f"{TAMANO*8 + 260}x{TAMANO*8 + 160}")
 
-frame_superior = tk.Frame(root, bg=BG_PANELES, pady=15) 
+# ==========================================
+# PANTALLA DE INICIO (ESTILO FUTURISTA CON CURSOR ARREGLADO)
+# ==========================================
+frame_menu = tk.Frame(root, bg=BG_PANELES)
+frame_menu.pack(fill="both", expand=True)
+
+box_intro = tk.Frame(frame_menu, bg="#111111", highlightbackground=COLOR_2, highlightthickness=2, padx=40, pady=40)
+box_intro.pack(pady=80)
+
+label_titulo = tk.Label(box_intro, text="⚡ CHESS_MATRIX ⚡", font=("Courier", 26, "bold"), bg="#111111", fg=COLOR_2)
+label_titulo.pack()
+
+label_subtitulo = tk.Label(box_intro, text="[ INITIALIZE TACTICAL SIMULATION ]", font=("Courier", 10), bg="#111111", fg=TEXTO_PANEL)
+label_subtitulo.pack(pady=(10, 30))
+
+label_decoracion = tk.Label(box_intro, text="♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜", font=("Helvetica", 24), bg="#111111", fg="#ffffff")
+label_decoracion.pack(pady=10)
+
+btn_iniciar = tk.Button(
+    box_intro, 
+    text="► ENTRAR AL SISTEMA", 
+    font=("Courier", 12, "bold"), 
+    bg=TEXTO_PANEL, 
+    fg="#ffffff", 
+    activebackground="#ff66b2", 
+    activeforeground="#ffffff",
+    padx=25, 
+    pady=10, 
+    bd=0, 
+    cursor="cross",  # Se corrigió "terminal" por "cross" para evitar errores de Tcl
+    command=iniciar_partida
+)
+btn_iniciar.pack(pady=(30, 0))
+
+
+# ==========================================
+# INTERFAZ DEL JUEGO PRINCIPAL
+# ==========================================
+frame_juego_principal = tk.Frame(root, bg=BG_PANELES)
+
+frame_superior = tk.Frame(frame_juego_principal, bg=BG_PANELES, pady=15) 
 frame_superior.pack(fill="x")
 
-label_j1 = tk.Label(frame_superior, font=("Courier", 14, "bold"), bg="#312e2b", fg="#ffffff", padx=15, pady=8, bd=1, relief="solid")
+label_j1 = tk.Label(frame_superior, font=("Courier", 13, "bold"), bg="#1a1a1a", fg="#ffffff", padx=15, pady=8, bd=1, relief="flat")
 label_j1.pack(side="left", padx=30)
+label_j1.config(text=f" CORE 01 (B) ⚡ {formatear_tiempo(tiempo_blancas)} ")
 
-label_j2 = tk.Label(frame_superior, font=("Courier", 14, "bold"), bg="#312e2b", fg="#ffffff", padx=15, pady=8, bd=1, relief="solid")
+label_j2 = tk.Label(frame_superior, font=("Courier", 13, "bold"), bg="#1a1a1a", fg="#ffffff", padx=15, pady=8, bd=1, relief="flat")
 label_j2.pack(side="right", padx=30)
+label_j2.config(text=f" CORE 02 (N) ⚡ {formatear_tiempo(tiempo_negras)} ")
 
-frame_juego = tk.Frame(root, bg=BG_PANELES)
+frame_juego = tk.Frame(frame_juego_principal, bg=BG_PANELES)
 frame_juego.pack(padx=10)
 
 frame_izq = tk.Frame(frame_juego, width=120, bg=BG_PANELES, padx=10)
 frame_izq.pack(side="left", fill="y")
-tk.Label(frame_izq, text="CAPTURAS J1", font=("Helvetica", 9, "bold"), bg=BG_PANELES, fg="#8b8987").pack(anchor="w")
+tk.Label(frame_izq, text="DATA_LOST J1", font=("Courier", 9, "bold"), bg=BG_PANELES, fg="#555555").pack(anchor="w")
 label_eliminadas_izq = tk.Label(frame_izq, text="", font=("Helvetica", 16), bg=BG_PANELES, fg="#ffffff", wraplength=100, justify="left")
 label_eliminadas_izq.pack(pady=5, anchor="w")
 
@@ -227,17 +282,11 @@ canvas.bind("<Button-1>", click)
 
 frame_der = tk.Frame(frame_juego, width=120, bg=BG_PANELES, padx=10)
 frame_der.pack(side="right", fill="y")
-tk.Label(frame_der, text="CAPTURAS J2", font=("Helvetica", 9, "bold"), bg=BG_PANELES, fg="#8b8987").pack(anchor="w")
+tk.Label(frame_der, text="DATA_LOST J2", font=("Courier", 9, "bold"), bg=BG_PANELES, fg="#555555").pack(anchor="w")
 label_eliminadas_der = tk.Label(frame_der, text="", font=("Helvetica", 16), bg=BG_PANELES, fg="#ffffff", wraplength=100, justify="left")
 label_eliminadas_der.pack(pady=5, anchor="w")
 
-label_info = tk.Label(root, text="Turno actual: Blancas (Jugador 1)", font=("Helvetica", 11), bg="#1e1c1a", fg="#ffffff", pady=8)
+label_info = tk.Label(frame_juego_principal, text="SISTEMA OPERATIVO // Turno de: Blancas (Core 01)", font=("Courier", 11), bg="#111111", fg=COLOR_2, pady=8)
 label_info.pack(fill="x", pady=15)
-
-actualizar_tablero()
-actualizar_reloj()
-
-root.mainloop()
-actualizar_reloj()
 
 root.mainloop()
